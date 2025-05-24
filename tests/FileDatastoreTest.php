@@ -18,7 +18,7 @@ final class FileDatastoreTest extends TestCase
     /**
      * @var MockObject&IOInterface
      */
-    private MockObject|IOInterface $io;
+    private $io;
     private FileDatastore $sut;
 
     protected function setUp(): void

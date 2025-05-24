@@ -15,8 +15,9 @@ use Acme\Attribute\Permission;
 #[Permission('can_delete_menu')]
 final class DeleteMenu
 {
-    public function __construct(
-        public int $id
-    ) {
+    public int $id;
+    public function __construct(int $id)
+    {
+        $this->id = $id;
     }
 }

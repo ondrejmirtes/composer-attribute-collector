@@ -19,10 +19,22 @@ final class ChainTest extends TestCase
     private const FILEPATH = "vendor/symfony/cache/Traits/RedisCluster5Proxy.php";
     private const CLASSNAME = "RedisCluster5Proxy";
 
-    private IOInterface|MockObject $io;
-    private Filter|MockObject $ok;
-    private Filter|MockObject $ko;
-    private Filter|MockObject $no;
+    /**
+     * @var IOInterface|MockObject
+     */
+    private $io;
+    /**
+     * @var Filter|MockObject
+     */
+    private $ok;
+    /**
+     * @var Filter|MockObject
+     */
+    private $ko;
+    /**
+     * @var Filter|MockObject
+     */
+    private $no;
 
     protected function setUp(): void
     {

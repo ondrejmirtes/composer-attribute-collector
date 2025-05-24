@@ -7,11 +7,15 @@ use Attribute;
 #[Attribute(Attribute::TARGET_PROPERTY)]
 final class Varchar implements SchemaAttribute
 {
-    public function __construct(
-        public int $size = 255,
-        public bool $null = false,
-        public bool $unique = false,
-        public ?string $collate = null,
-    ) {
+    public int $size;
+    public bool $null;
+    public bool $unique;
+    public ?string $collate;
+    public function __construct(int $size = 255, bool $null = false, bool $unique = false, ?string $collate = null)
+    {
+        $this->size = $size;
+        $this->null = $null;
+        $this->unique = $unique;
+        $this->collate = $collate;
     }
 }

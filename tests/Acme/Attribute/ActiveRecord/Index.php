@@ -13,13 +13,19 @@ use Attribute;
 final class Index implements SchemaAttribute
 {
     /**
+     * @var string|array<string>
+     */
+    public $columns;
+    public bool $unique;
+    public ?string $name;
+    /**
      * @param string|array<string> $columns
      *     Identifiers of the columns making the unique index.
      */
-    public function __construct(
-        public array|string $columns,
-        public bool $unique = false,
-        public ?string $name = null
-    ) {
+    public function __construct($columns, bool $unique = false, ?string $name = null)
+    {
+        $this->columns = $columns;
+        $this->unique = $unique;
+        $this->name = $name;
     }
 }

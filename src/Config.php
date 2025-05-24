@@ -27,6 +27,23 @@ use const DIRECTORY_SEPARATOR;
  */
 final class Config
 {
+    public string $vendorDir;
+    /**
+     * @var non-empty-string
+     */
+    public string $attributesFile;
+    /**
+     * @var non-empty-string[]
+     */
+    public array $include;
+    /**
+     * @var non-empty-string[]
+     */
+    public array $exclude;
+    /**
+     * @var bool
+     */
+    public bool $useCache;
     public const EXTRA = 'composer-attribute-collector';
     public const EXTRA_INCLUDE = 'include';
     public const EXTRA_EXCLUDE = 'exclude';
@@ -96,13 +113,13 @@ final class Config
      * @param bool $useCache
      *     Whether a cache should be used during the process.
      */
-    public function __construct(
-        public string $vendorDir,
-        public string $attributesFile,
-        public array $include,
-        public array $exclude,
-        public bool $useCache,
-    ) {
+    public function __construct(string $vendorDir, string $attributesFile, array $include, array $exclude, bool $useCache)
+    {
+        $this->vendorDir = $vendorDir;
+        $this->attributesFile = $attributesFile;
+        $this->include = $include;
+        $this->exclude = $exclude;
+        $this->useCache = $useCache;
         $this->excludeRegExp = count($exclude) ? self::compileExclude($this->exclude) : null;
     }
 

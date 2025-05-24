@@ -25,17 +25,21 @@ use const DIRECTORY_SEPARATOR;
 final class FileDatastore implements Datastore
 {
     /**
+     * @var non-empty-string
+     */
+    private string $dir;
+    private IOInterface $io;
+    /**
      * @param non-empty-string $dir
      */
-    public function __construct(
-        private string $dir,
-        private IOInterface $io,
-    ) {
+    public function __construct(string $dir, IOInterface $io)
+    {
+        $this->dir = $dir;
+        $this->io = $io;
         if (!is_dir($dir)) {
             mkdir($dir);
         }
     }
-
     public function get(string $key): array
     {
         $filename = $this->formatFilename($key);

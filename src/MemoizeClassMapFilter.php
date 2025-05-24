@@ -17,6 +17,8 @@ use const ARRAY_FILTER_USE_KEY;
  */
 class MemoizeClassMapFilter
 {
+    private Datastore $datastore;
+    private IOInterface $io;
     private const KEY = 'filtered';
 
     /**
@@ -24,10 +26,10 @@ class MemoizeClassMapFilter
      */
     private array $state;
 
-    public function __construct(
-        private Datastore $datastore,
-        private IOInterface $io,
-    ) {
+    public function __construct(Datastore $datastore, IOInterface $io)
+    {
+        $this->datastore = $datastore;
+        $this->io = $io;
         /** @phpstan-ignore-next-line */
         $this->state = $this->datastore->get(self::KEY);
     }

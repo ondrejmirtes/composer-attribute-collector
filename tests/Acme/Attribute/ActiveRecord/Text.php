@@ -7,11 +7,21 @@ use Attribute;
 #[Attribute(Attribute::TARGET_PROPERTY)]
 final class Text implements SchemaAttribute
 {
-    public function __construct(
-        public string|null $size = null,
-        public bool $null = false,
-        public bool $unique = false,
-        public ?string $collate = null,
-    ) {
+    /**
+     * @var string|null
+     */
+    public $size;
+    public bool $null;
+    public bool $unique;
+    public ?string $collate;
+    /**
+     * @param string|null $size
+     */
+    public function __construct($size = null, bool $null = false, bool $unique = false, ?string $collate = null)
+    {
+        $this->size = $size;
+        $this->null = $null;
+        $this->unique = $unique;
+        $this->collate = $collate;
     }
 }

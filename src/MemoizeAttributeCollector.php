@@ -15,6 +15,9 @@ use const ARRAY_FILTER_USE_KEY;
  */
 class MemoizeAttributeCollector
 {
+    private ClassAttributeCollector $classAttributeCollector;
+    private Datastore $datastore;
+    private IOInterface $io;
     private const KEY = 'attributes';
 
     /**
@@ -32,11 +35,11 @@ class MemoizeAttributeCollector
      */
     private array $state;
 
-    public function __construct(
-        private ClassAttributeCollector $classAttributeCollector,
-        private Datastore $datastore,
-        private IOInterface $io,
-    ) {
+    public function __construct(ClassAttributeCollector $classAttributeCollector, Datastore $datastore, IOInterface $io)
+    {
+        $this->classAttributeCollector = $classAttributeCollector;
+        $this->datastore = $datastore;
+        $this->io = $io;
         /** @phpstan-ignore-next-line */
         $this->state = $this->datastore->get(self::KEY);
     }

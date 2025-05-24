@@ -8,11 +8,15 @@ use olvlvl\ComposerAttributeCollector\Filter;
 final class Chain implements Filter
 {
     /**
+     * @var iterable<Filter>
+     */
+    private iterable $filters;
+    /**
      * @param iterable<Filter> $filters
      */
-    public function __construct(
-        private iterable $filters
-    ) {
+    public function __construct(iterable $filters)
+    {
+        $this->filters = $filters;
     }
 
     public function filter(string $filepath, string $class, IOInterface $io): bool

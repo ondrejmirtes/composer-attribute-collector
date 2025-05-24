@@ -17,7 +17,10 @@ use PHPUnit\Framework\TestCase;
 final class ContentFilterTest extends TestCase
 {
     private ContentFilter $sut;
-    private MockObjectAlias|IOInterface $io;
+    /**
+     * @var MockObjectAlias|IOInterface
+     */
+    private $io;
 
     protected function setUp(): void
     {

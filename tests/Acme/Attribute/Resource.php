@@ -14,8 +14,9 @@ use Attribute;
 #[Attribute(Attribute::TARGET_CLASS)]
 final class Resource
 {
-    public function __construct(
-        public string $name
-    ) {
+    public string $name;
+    public function __construct(string $name)
+    {
+        $this->name = $name;
     }
 }

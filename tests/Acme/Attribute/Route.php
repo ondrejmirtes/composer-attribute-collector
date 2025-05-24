@@ -14,13 +14,19 @@ use Attribute;
 #[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_METHOD)]
 class Route
 {
+    public string $pattern;
+    /**
+     * @var string|string[]
+     */
+    public $method;
+    public ?string $id;
     /**
      * @param string|string[] $method
      */
-    public function __construct(
-        public string $pattern,
-        public string|array $method = 'GET',
-        public ?string $id = null,
-    ) {
+    public function __construct(string $pattern, $method = 'GET', ?string $id = null)
+    {
+        $this->pattern = $pattern;
+        $this->method = $method;
+        $this->id = $id;
     }
 }

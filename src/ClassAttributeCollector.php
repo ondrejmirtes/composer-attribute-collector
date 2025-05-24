@@ -13,11 +13,11 @@ use ReflectionException;
  */
 class ClassAttributeCollector
 {
-    public function __construct(
-        private IOInterface $io,
-    ) {
+    private IOInterface $io;
+    public function __construct(IOInterface $io)
+    {
+        $this->io = $io;
     }
-
     /**
      * @param class-string $class
      *

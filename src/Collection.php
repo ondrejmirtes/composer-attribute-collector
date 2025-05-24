@@ -13,6 +13,18 @@ use function array_map;
 final class Collection
 {
     /**
+     * @var array<class-string, array<array{mixed[], class-string}>>
+     */
+    private array $targetClasses;
+    /**
+     * @var array<class-string, array<array{mixed[], class-string, non-empty-string}>>
+     */
+    private array $targetMethods;
+    /**
+     * @var array<class-string, array<array{mixed[], class-string, non-empty-string}>>
+     */
+    private array $targetProperties;
+    /**
      * @param array<class-string, array<array{ mixed[], class-string }>> $targetClasses
      *     Where _key_ is an attribute class and _value_ an array of arrays
      *     where 0 are the attribute arguments and 1 is a target class.
@@ -23,13 +35,12 @@ final class Collection
      *     Where _key_ is an attribute class and _value_ an array of arrays
      *     where 0 are the attribute arguments, 1 is a target class, and 2 is the target property.
      */
-    public function __construct(
-        private array $targetClasses,
-        private array $targetMethods,
-        private array $targetProperties,
-    ) {
+    public function __construct(array $targetClasses, array $targetMethods, array $targetProperties)
+    {
+        $this->targetClasses = $targetClasses;
+        $this->targetMethods = $targetMethods;
+        $this->targetProperties = $targetProperties;
     }
-
     /**
      * @template T of object
      *
@@ -92,12 +103,8 @@ final class Collection
      *
      * @return TargetMethod<T>
      */
-    private static function createMethodAttribute(
-        string $attribute,
-        array $arguments,
-        string $class,
-        string $method,
-    ): object {
+    private static function createMethodAttribute(string $attribute, array $arguments, string $class, string $method): object
+    {
         try {
             $a = new $attribute(...$arguments);
             return new TargetMethod($a, $class, $method);
@@ -134,12 +141,8 @@ final class Collection
      *
      * @return TargetProperty<T>
      */
-    private static function createPropertyAttribute(
-        string $attribute,
-        array $arguments,
-        string $class,
-        string $property,
-    ): object {
+    private static function createPropertyAttribute(string $attribute, array $arguments, string $class, string $property): object
+    {
         try {
             $a = new $attribute(...$arguments);
             return new TargetProperty($a, $class, $property);

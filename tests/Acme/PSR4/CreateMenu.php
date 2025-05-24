@@ -15,9 +15,9 @@ use Acme\Attribute\Permission;
 #[Permission('can_create_menu')]
 final class CreateMenu
 {
-    // @phpstan-ignore-next-line
-    public function __construct(
-        public array $properties
-    ) {
+    public array $properties;
+    public function __construct(array $properties)
+    {
+        $this->properties = $properties;
     }
 }

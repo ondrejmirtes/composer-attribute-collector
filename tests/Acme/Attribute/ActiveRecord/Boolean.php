@@ -7,8 +7,9 @@ use Attribute;
 #[Attribute(Attribute::TARGET_PROPERTY)]
 final class Boolean implements SchemaAttribute
 {
-    public function __construct(
-        public bool $null = false,
-    ) {
+    public bool $null;
+    public function __construct(bool $null = false)
+    {
+        $this->null = $null;
     }
 }

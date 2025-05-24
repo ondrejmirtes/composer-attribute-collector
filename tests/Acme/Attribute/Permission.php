@@ -14,8 +14,9 @@ use Attribute;
 #[Attribute(Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)]
 final class Permission
 {
-    public function __construct(
-        public string $permission
-    ) {
+    public string $permission;
+    public function __construct(string $permission)
+    {
+        $this->permission = $permission;
     }
 }

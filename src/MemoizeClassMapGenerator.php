@@ -21,6 +21,8 @@ use const ARRAY_FILTER_USE_KEY;
  */
 class MemoizeClassMapGenerator
 {
+    private Datastore $datastore;
+    private IOInterface $io;
     private const KEY = 'classmap';
 
     /**
@@ -36,10 +38,10 @@ class MemoizeClassMapGenerator
      */
     private array $paths;
 
-    public function __construct(
-        private Datastore $datastore,
-        private IOInterface $io,
-    ) {
+    public function __construct(Datastore $datastore, IOInterface $io)
+    {
+        $this->datastore = $datastore;
+        $this->io = $io;
         /** @phpstan-ignore-next-line */
         $this->state = $this->datastore->get(self::KEY);
     }
