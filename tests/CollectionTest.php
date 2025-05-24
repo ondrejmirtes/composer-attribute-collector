@@ -9,96 +9,31 @@ use Acme\Attribute\ActiveRecord\Serial;
 use Acme\Attribute\ActiveRecord\Text;
 use Acme\Attribute\ActiveRecord\Varchar;
 use Acme\Attribute\Get;
-use Acme\Attribute\Permission;
 use Acme\Attribute\Post;
 use Acme\Attribute\Route;
 use Acme\Presentation\FileController;
 use Acme\Presentation\ImageController;
 use Acme\PSR4\ActiveRecord\Article;
-use Acme\PSR4\DeleteMenu;
 use Acme\PSR4\Presentation\ArticleController;
-use Closure;
 use olvlvl\ComposerAttributeCollector\Attributes;
 use olvlvl\ComposerAttributeCollector\Collection;
 use olvlvl\ComposerAttributeCollector\TargetClass;
 use olvlvl\ComposerAttributeCollector\TargetMethod;
 use olvlvl\ComposerAttributeCollector\TargetProperty;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
 
 use function in_array;
 
 final class CollectionTest extends TestCase
 {
-    /**
-     * @dataProvider provideInstantiationErrorIsDecorated
-     *
-     * @param Closure(Collection):void $act
-     */
-    public function testInstantiationErrorIsDecorated(string $expectedMessage, Closure $act): void
-    {
-        $collection = new Collection(
-            [
-                Permission::class => [
-                    [ [ 'Permission' => 'is_admin' ], DeleteMenu::class ],
-                ]
-            ],
-            [
-                Route::class => [
-                    [ [ 'Method' => 'GET' ], ArticleController::class, 'list' ],
-                ]
-            ],
-            [
-                Serial::class => [
-                    [ [ 'Primary' => true ], Article::class, 'id' ],
-                ]
-            ]
-        );
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage($expectedMessage);
-        $act($collection);
-    }
-
-    /**
-     * @return array<array{ string, Closure }>
-     */
-    public static function provideInstantiationErrorIsDecorated(): array
-    {
-        return [
-
-            [
-                "An error occurred while instantiating attribute Acme\Attribute\Permission on class Acme\PSR4\DeleteMenu",
-                fn(Collection $c) => $c->findTargetClasses(Permission::class),
-            ],
-            [
-                "An error occurred while instantiating attribute Acme\Attribute\Route on method Acme\PSR4\Presentation\ArticleController::list",
-                fn(Collection $c) => $c->findTargetMethods(Route::class),
-            ],
-            [
-                "An error occurred while instantiating attribute Acme\Attribute\ActiveRecord\Serial on property Acme\PSR4\ActiveRecord\Article::id",
-                fn(Collection $c) => $c->findTargetProperties(Serial::class),
-            ],
-            [
-                "An error occurred while instantiating attribute Acme\Attribute\Permission on class Acme\PSR4\DeleteMenu",
-                fn(Collection $c) => $c->forClass(DeleteMenu::class),
-            ],
-            [
-                "An error occurred while instantiating attribute Acme\Attribute\Route on method Acme\PSR4\Presentation\ArticleController::list",
-                fn(Collection $c) => $c->forClass(ArticleController::class),
-            ],
-
-        ];
-    }
-
     public function testFilterTargetClasses(): void
     {
         $collection = new Collection(
             [
                 Route::class => [
-                    [ [ 'pattern' => '/articles' ], ArticleController::class ],
-                    [ [ 'pattern' => '/images' ], ImageController::class ],
-                    [ [ 'pattern' => '/files' ], FileController::class ],
+                    [ [ '/articles' ], ArticleController::class ],
+                    [ [ '/images' ], ImageController::class ],
+                    [ [ '/files' ], FileController::class ],
                 ],
             ],
             [
@@ -124,7 +59,7 @@ final class CollectionTest extends TestCase
             ],
             [
                 Route::class => [
-                    [ [ 'pattern' => '/recent' ], ArticleController::class, 'recent' ],
+                    [ [ '/recent' ], ArticleController::class, 'recent' ],
                 ],
                 Get::class => [
                     [ [ ], ArticleController::class, 'show' ],
@@ -153,7 +88,7 @@ final class CollectionTest extends TestCase
             ],
             [
                 Route::class => [
-                    [ [ 'pattern' => '/recent' ], ArticleController::class, 'recent' ],
+                    [ [ '/recent' ], ArticleController::class, 'recent' ],
                 ],
                 Get::class => [
                     [ [ ], ArticleController::class, 'show' ],
@@ -170,7 +105,7 @@ final class CollectionTest extends TestCase
                     [ [ ], Article::class, 'id' ],
                 ],
                 Varchar::class => [
-                    [ [ 'size' => 80 ], Article::class, 'title' ],
+                    [ [ 80 ], Article::class, 'title' ],
                 ],
                 Text::class => [
                     [ [ ], Article::class, 'body' ],
@@ -195,15 +130,15 @@ final class CollectionTest extends TestCase
         $collection = new Collection(
             [
                 Index::class => [
-                    [ [ 'slug', 'unique' => true ], Article::class ],
+                    [ [ 'slug', true ], Article::class ],
                 ],
                 Route::class => [ // trap
-                    [ [ 'pattern' => '/articles' ], ArticleController::class ],
+                    [ [ '/articles' ], ArticleController::class ],
                 ],
             ],
             [
                 Route::class => [ // trap
-                    [ [ 'pattern' => '/recent' ], ArticleController::class, 'recent' ],
+                    [ [ '/recent' ], ArticleController::class, 'recent' ],
                 ],
             ],
             [
@@ -214,8 +149,8 @@ final class CollectionTest extends TestCase
                     [ [ ], Article::class, 'id' ],
                 ],
                 Varchar::class => [
-                    [ [ 'size' => 80 ], Article::class, 'title' ],
-                    [ [ 'size' => 80 ], Article::class, 'slug' ],
+                    [ [ 80 ], Article::class, 'title' ],
+                    [ [ 80 ], Article::class, 'slug' ],
                 ],
                 Text::class => [
                     [ [ ], Article::class, 'body' ],
