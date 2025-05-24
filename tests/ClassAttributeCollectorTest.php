@@ -128,7 +128,7 @@ final class ClassAttributeCollectorTest extends TestCase
                         new TransientTargetProperty('Acme\Attribute\ActiveRecord\Id', [], 'id'),
                         new TransientTargetProperty('Acme\Attribute\ActiveRecord\Serial', [], 'id'),
                         new TransientTargetProperty('Acme\Attribute\ActiveRecord\Varchar', [ 80 ], 'title'),
-                        new TransientTargetProperty('Acme\Attribute\ActiveRecord\Varchar', [ 80, 'unique' => true ], 'slug'),
+                        new TransientTargetProperty('Acme\Attribute\ActiveRecord\Varchar', [ 80, false, true ], 'slug'),
                         new TransientTargetProperty('Acme\Attribute\ActiveRecord\Text', [], 'body'),
                         new TransientTargetProperty('Acme\Attribute\ActiveRecord\Boolean', [], 'active'),
                     ],

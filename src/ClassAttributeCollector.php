@@ -4,8 +4,10 @@ namespace olvlvl\ComposerAttributeCollector;
 
 use Attribute;
 use Composer\IO\IOInterface;
+use PhpParser\ConstExprEvaluationException;
 use PhpParser\ConstExprEvaluator;
 use PhpParser\Node;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
@@ -18,6 +20,7 @@ use ReflectionProperty;
 
 use function file_get_contents;
 
+use function sprintf;
 use const PHP_VERSION_ID;
 
 /**
@@ -215,7 +218,13 @@ class ClassAttributeCollector
      */
     private function attrGroupsToAttributes(array $attrGroups): array
     {
-        $evaluator = new ConstExprEvaluator();
+        $evaluator = new ConstExprEvaluator(function (Expr $expr) {
+            if ($expr instanceof Expr\ClassConstFetch && $expr->class instanceof Node\Name && $expr->name instanceof Node\Identifier) {
+                return constant(sprintf('%s::%s', $expr->class->toString(), $expr->name->toString()));
+            }
+
+            throw new ConstExprEvaluationException("Expression of type {$expr->getType()} cannot be evaluated");
+        });
 
         $attributes = [];
         foreach ($attrGroups as $attrGroup) {

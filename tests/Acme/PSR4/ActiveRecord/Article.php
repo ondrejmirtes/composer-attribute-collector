@@ -19,7 +19,7 @@ class Article
     #[Varchar(80)]
     public string $title;
 
-    #[Varchar(80, unique: true)]
+    #[Varchar(80, false, true)]
     public string $slug;
 
     #[Text]
