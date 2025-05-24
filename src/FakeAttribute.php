@@ -4,7 +4,6 @@ namespace olvlvl\ComposerAttributeCollector;
 
 class FakeAttribute
 {
-
     private string $name;
 
     /** @var mixed[] */
@@ -32,5 +31,4 @@ class FakeAttribute
     {
         return $this->arguments;
     }
-
 }

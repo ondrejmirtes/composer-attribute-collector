@@ -15,7 +15,9 @@ use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionProperty;
+
 use function file_get_contents;
+
 use const PHP_VERSION_ID;
 
 /**
