@@ -10,7 +10,7 @@ use Acme81\Attribute\Route;
 #[Route('/articles')]
 class ArticleController
 {
-    #[Route('/:id', method: Method::GET)]
+    #[Route('/:id', Method::GET)]
     public function show()
     {
     }

@@ -92,12 +92,12 @@ final class ClassAttributeCollectorTest extends TestCase
                     [
                         new TransientTargetMethod(
                             'Acme\Attribute\Route',
-                            [ 'method' => 'GET', 'id' => 'articles:list', 'pattern' => "/articles" ],
+                            [ "/articles", 'GET', 'articles:list' ],
                             'list',
                         ),
                         new TransientTargetMethod(
                             'Acme\Attribute\Route',
-                            [ 'id' => 'articles:show', 'pattern' => "/articles/{id}", 'method' => 'GET' ],
+                            [ "/articles/{id}", 'GET', 'articles:show' ],
                             'show',
                         ),
                     ],

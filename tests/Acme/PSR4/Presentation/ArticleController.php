@@ -15,12 +15,12 @@ use Acme\Attribute\Route;
 #[Resource("articles")]
 final class ArticleController
 {
-    #[Route(method: 'GET', id: 'articles:list', pattern: "/articles")]
+    #[Route("/articles", 'GET', 'articles:list')]
     public function list(): void
     {
     }
 
-    #[Route(id: 'articles:show', pattern: "/articles/{id}", method: 'GET')]
+    #[Route("/articles/{id}", 'GET', 'articles:show')]
     public function show(int $id): void
     {
     }
