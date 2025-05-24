@@ -1,8 +1,8 @@
 # composer-attribute-collector
 
-[![Release](https://img.shields.io/packagist/v/olvlvl/composer-attribute-collector.svg)](https://packagist.org/packages/olvlvl/composer-attribute-collector)
-[![Code Coverage](https://coveralls.io/repos/github/olvlvl/composer-attribute-collector/badge.svg?branch=main)](https://coveralls.io/r/olvlvl/composer-attribute-collector?branch=main)
-[![Downloads](https://img.shields.io/packagist/dt/olvlvl/composer-attribute-collector.svg)](https://packagist.org/packages/olvlvl/composer-attribute-collector)
+[![Release](https://img.shields.io/packagist/v/ondrejmirtes/composer-attribute-collector.svg)](https://packagist.org/packages/olvlvl/composer-attribute-collector)
+[![Code Coverage](https://coveralls.io/repos/github/ondrejmirtes/composer-attribute-collector/badge.svg?branch=main)](https://coveralls.io/r/ondrejmirtes/composer-attribute-collector?branch=main)
+[![Downloads](https://img.shields.io/packagist/dt/ondrejmirtes/composer-attribute-collector.svg)](https://packagist.org/packages/olvlvl/composer-attribute-collector)
 
 **composer-attribute-collector** is a plugin for [Composer][]. Its ambition is to provide a
 convenient way—and near zero cost—to retrieve targets of PHP 8 attributes. After the autoloader has

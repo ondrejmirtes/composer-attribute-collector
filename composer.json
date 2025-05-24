@@ -1,5 +1,5 @@
 {
-  "name": "olvlvl/composer-attribute-collector",
+  "name": "ondrejmirtes/composer-attribute-collector",
   "type": "composer-plugin",
   "description": "A convenient and near zero-cost way to retrieve targets of PHP 8 attributes",
   "license": "BSD-3-Clause",
@@ -8,6 +8,11 @@
       "name": "Olivier Laviale",
       "email": "olivier.laviale@gmail.com",
       "homepage": "https://olvlvl.com/",
+      "role": "Developer"
+    },
+    {
+      "name": "Ondrej Mirtes",
+      "email": "ondrej@mirtes.cz",
       "role": "Developer"
     }
   ],
