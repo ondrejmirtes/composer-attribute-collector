@@ -13,6 +13,7 @@ use olvlvl\ComposerAttributeCollector\Datastore\RuntimeDatastore;
 use olvlvl\ComposerAttributeCollector\Filter\ContentFilter;
 use olvlvl\ComposerAttributeCollector\Filter\InterfaceFilter;
 
+use PhpParser\ParserFactory;
 use function file_exists;
 use function file_put_contents;
 use function microtime;
@@ -125,7 +126,10 @@ final class Plugin implements PluginInterface, EventSubscriberInterface
         // Collect attributes
         //
         $start = microtime(true);
-        $attributeCollector = new MemoizeAttributeCollector(new ClassAttributeCollector($io), $datastore, $io);
+
+        $parserFactory = new ParserFactory();
+        $parser = $parserFactory->createForNewestSupportedVersion();
+        $attributeCollector = new MemoizeAttributeCollector(new ClassAttributeCollector($io, $parser), $datastore, $io);
         $collection = $attributeCollector->collectAttributes($classMap);
         $elapsed = self::renderElapsedTime($start);
         $io->debug("Generating attributes file: collected attributes in $elapsed");

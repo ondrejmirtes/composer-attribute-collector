@@ -13,6 +13,7 @@ use olvlvl\ComposerAttributeCollector\ClassAttributeCollector;
 use olvlvl\ComposerAttributeCollector\TransientTargetClass;
 use olvlvl\ComposerAttributeCollector\TransientTargetMethod;
 use olvlvl\ComposerAttributeCollector\TransientTargetProperty;
+use PhpParser\ParserFactory;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
 
@@ -24,7 +25,10 @@ final class ClassAttributeCollectorTest extends TestCase
     {
         parent::setUp();
 
-        $this->sut = new ClassAttributeCollector(new NullIO());
+        $parserFactory = new ParserFactory();
+        $parser = $parserFactory->createForNewestSupportedVersion();
+
+        $this->sut = new ClassAttributeCollector(new NullIO(), $parser);
     }
 
     /**
