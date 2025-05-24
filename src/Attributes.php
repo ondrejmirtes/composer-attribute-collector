@@ -118,8 +118,14 @@ final class Attributes
 
     private static function getCollection(): Collection
     {
-        return self::$collection ??= (
-            self::$provider ?? throw new LogicException("provider not set yet")
-        )();
+        if (self::$collection !== null) {
+            return self::$collection;
+        }
+
+        if (self::$provider === null) {
+            throw new LogicException("provider not set yet");
+        }
+
+        return self::$collection = (self::$provider)();
     }
 }

@@ -38,17 +38,17 @@ final class CollectionTest extends TestCase
     public function testInstantiationErrorIsDecorated(string $expectedMessage, Closure $act): void
     {
         $collection = new Collection(
-            targetClasses: [
+            [
                 Permission::class => [
                     [ [ 'Permission' => 'is_admin' ], DeleteMenu::class ],
                 ]
             ],
-            targetMethods: [
+            [
                 Route::class => [
                     [ [ 'Method' => 'GET' ], ArticleController::class, 'list' ],
                 ]
             ],
-            targetProperties: [
+            [
                 Serial::class => [
                     [ [ 'Primary' => true ], Article::class, 'id' ],
                 ]
@@ -94,16 +94,16 @@ final class CollectionTest extends TestCase
     public function testFilterTargetClasses(): void
     {
         $collection = new Collection(
-            targetClasses: [
+            [
                 Route::class => [
                     [ [ 'pattern' => '/articles' ], ArticleController::class ],
                     [ [ 'pattern' => '/images' ], ImageController::class ],
                     [ [ 'pattern' => '/files' ], FileController::class ],
                 ],
             ],
-            targetMethods: [
+            [
             ],
-            targetProperties: [
+            [
             ]
         );
 
@@ -120,9 +120,9 @@ final class CollectionTest extends TestCase
     public function testFilterTargetMethods(): void
     {
         $collection = new Collection(
-            targetClasses: [
+            [
             ],
-            targetMethods: [
+            [
                 Route::class => [
                     [ [ 'pattern' => '/recent' ], ArticleController::class, 'recent' ],
                 ],
@@ -133,7 +133,7 @@ final class CollectionTest extends TestCase
                     [ [ ], ArticleController::class, 'create' ],
                 ],
             ],
-            targetProperties: [
+            [
             ]
         );
 
@@ -149,9 +149,9 @@ final class CollectionTest extends TestCase
     public function testFilterTargetProperties(): void
     {
         $collection = new Collection(
-            targetClasses: [
+            [
             ],
-            targetMethods: [
+            [
                 Route::class => [
                     [ [ 'pattern' => '/recent' ], ArticleController::class, 'recent' ],
                 ],
@@ -162,7 +162,7 @@ final class CollectionTest extends TestCase
                     [ [ ], ArticleController::class, 'create' ],
                 ],
             ],
-            targetProperties: [
+            [
                 Id::class => [
                     [ [ ], Article::class, 'id' ],
                 ],
@@ -185,7 +185,7 @@ final class CollectionTest extends TestCase
         $this->assertEquals([
             new TargetProperty(new Id(), Article::class, 'id'),
             new TargetProperty(new Serial(), Article::class, 'id'),
-            new TargetProperty(new Varchar(size: 80), Article::class, 'title'),
+            new TargetProperty(new Varchar(80), Article::class, 'title'),
             new TargetProperty(new Text(), Article::class, 'body'),
         ], $actual);
     }
@@ -193,7 +193,7 @@ final class CollectionTest extends TestCase
     public function testForClass(): void
     {
         $collection = new Collection(
-            targetClasses: [
+            [
                 Index::class => [
                     [ [ 'slug', 'unique' => true ], Article::class ],
                 ],
@@ -201,12 +201,12 @@ final class CollectionTest extends TestCase
                     [ [ 'pattern' => '/articles' ], ArticleController::class ],
                 ],
             ],
-            targetMethods: [
+            [
                 Route::class => [ // trap
                     [ [ 'pattern' => '/recent' ], ArticleController::class, 'recent' ],
                 ],
             ],
-            targetProperties: [
+            [
                 Id::class => [
                     [ [ ], Article::class, 'id' ],
                 ],
@@ -226,7 +226,7 @@ final class CollectionTest extends TestCase
         $actual = $collection->forClass(Article::class);
 
         $this->assertEquals([
-            new Index('slug', unique: true),
+            new Index('slug', true),
         ], $actual->classAttributes);
 
         $this->assertEmpty($actual->methodsAttributes);
@@ -237,10 +237,10 @@ final class CollectionTest extends TestCase
                 new Serial(),
             ],
             'title' => [
-                new Varchar(size: 80),
+                new Varchar(80),
             ],
             'slug' => [
-                new Varchar(size: 80),
+                new Varchar(80),
             ],
             'body' => [
                 new Text(),

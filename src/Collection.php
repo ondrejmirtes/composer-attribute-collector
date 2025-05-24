@@ -73,7 +73,8 @@ final class Collection
         } catch (Throwable $e) {
             throw new RuntimeException(
                 "An error occurred while instantiating attribute $attribute on class $class",
-                previous: $e,
+                0,
+                $e,
             );
         }
     }
@@ -111,7 +112,8 @@ final class Collection
         } catch (Throwable $e) {
             throw new RuntimeException(
                 "An error occurred while instantiating attribute $attribute on method $class::$method",
-                previous: $e,
+                0,
+                $e,
             );
         }
     }
@@ -149,7 +151,8 @@ final class Collection
         } catch (Throwable $e) {
             throw new RuntimeException(
                 "An error occurred while instantiating attribute $attribute on property $class::$property",
-                previous: $e,
+                0,
+                $e,
             );
         }
     }

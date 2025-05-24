@@ -76,10 +76,10 @@ final class Config
 
         return new self(
             $vendorDir,
-            attributesFile: "$vendorDir/attributes.php",
-            include: $include,
-            exclude: $exclude,
-            useCache: $useCache,
+            "$vendorDir/attributes.php",
+            $include,
+            $exclude,
+            $useCache,
         );
     }
 

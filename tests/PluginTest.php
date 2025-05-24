@@ -68,13 +68,13 @@ final class PluginTest extends TestCase
         }
 
         $config = new Config(
-            vendorDir: $vendorDir,
-            attributesFile: $filepath,
-            include: [
+            $vendorDir,
+            $filepath,
+            [
                 "$cwd/tests"
             ],
-            exclude: $exclude,
-            useCache: false,
+            $exclude,
+            false,
         );
 
         Plugin::dump(
@@ -218,7 +218,7 @@ final class PluginTest extends TestCase
             [
                 Varchar::class,
                 [
-                    [ new Varchar(80, unique: true), 'Acme\PSR4\ActiveRecord\Article::slug' ],
+                    [ new Varchar(80, false, true), 'Acme\PSR4\ActiveRecord\Article::slug' ],
                     [ new Varchar(80), 'Acme\PSR4\ActiveRecord\Article::title' ],
                 ]
             ],
@@ -272,7 +272,7 @@ final class PluginTest extends TestCase
     {
         $expected = [
             new TargetMethod(
-                new \Acme81\Attribute\Route('/:id', method: \Acme81\Attribute\Method::GET),
+                new \Acme81\Attribute\Route('/:id', \Acme81\Attribute\Method::GET),
                 \Acme81\PSR4\Presentation\ArticleController::class,
                 'show'
             ),
@@ -306,7 +306,7 @@ final class PluginTest extends TestCase
             [ new Text(), 'Acme\PSR4\ActiveRecord\Article::body' ],
             [ new Id(), 'Acme\PSR4\ActiveRecord\Article::id' ],
             [ new Serial(), 'Acme\PSR4\ActiveRecord\Article::id' ],
-            [ new Varchar(80, unique: true), 'Acme\PSR4\ActiveRecord\Article::slug' ],
+            [ new Varchar(80, false, true), 'Acme\PSR4\ActiveRecord\Article::slug' ],
             [ new Varchar(80), 'Acme\PSR4\ActiveRecord\Article::title' ],
         ], $this->collectProperties($actual));
     }
@@ -320,8 +320,8 @@ final class PluginTest extends TestCase
         ], $forClass->classAttributes);
 
         $this->assertEquals([
-            'list' => [ new Route("/articles", id: 'articles:list') ],
-            'show' => [ new Route("/articles/{id}", id: 'articles:show') ],
+            'list' => [ new Route("/articles", 'GET', 'articles:list') ],
+            'show' => [ new Route("/articles/{id}", 'GET', 'articles:show') ],
         ], $forClass->methodsAttributes);
     }
 

@@ -47,17 +47,17 @@ final class ConfigTest extends TestCase
         $composer->setPackage($package);
 
         $expected = new Config(
-            vendorDir: "$cwd/vendor",
-            attributesFile: "$cwd/vendor/attributes.php",
-            include: [
+            "$cwd/vendor",
+            "$cwd/vendor/attributes.php",
+            [
                 "$cwd/tests",
                 "$cwd/vendor/vendor1/package1",
             ],
-            exclude: [
+            [
                 "$cwd/tests/Acme/PSR4/IncompatibleSignature.php",
                 "$cwd/vendor/vendor1/package1/file.php",
             ],
-            useCache: false,
+            false,
         );
 
         $actual = Config::from($composer);
