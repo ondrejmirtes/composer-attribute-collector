@@ -120,6 +120,10 @@ class ClassAttributeCollector
     {
         static $ignored = [
             \ReturnTypeWillChange::class => true,
+            \Override::class => true,
+            \SensitiveParameter::class => true,
+            \Deprecated::class => true,
+            \AllowDynamicProperties::class,
         ];
 
         return isset($ignored[$attribute->getName()]); // @phpstan-ignore offsetAccess.nonOffsetAccessible
