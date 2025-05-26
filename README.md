@@ -111,7 +111,7 @@ Use [Composer][] to install the plugin.
 You will be asked if you trust the plugin and wish to activate it, select `y` to proceed.
 
 ```shell
-composer require olvlvl/composer-attribute-collector
+composer require ondrejmirtes/composer-attribute-collector
 ```
 
 You should see log messages similar to this:
