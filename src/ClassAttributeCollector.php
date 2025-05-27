@@ -45,6 +45,7 @@ class ClassAttributeCollector
      *     array<TransientTargetClass>,
      *     array<TransientTargetMethod>,
      *     array<TransientTargetProperty>,
+     *     array<non-empty-string, array<TransientTargetMethodParameter>>,
      * }
      *
      * @throws ReflectionException
@@ -54,7 +55,7 @@ class ClassAttributeCollector
         $classReflection = new ReflectionClass($class);
 
         if ($this->isAttribute($classReflection)) {
-            return [ [], [], [] ];
+            return [ [], [], [], [] ];
         }
 
         $classAttributes = [];
@@ -74,7 +75,9 @@ class ClassAttributeCollector
         }
 
         $methodAttributes = [];
+        $methodParameterAttributes = [];
 
+        $parameterAttributeCollector = new ParameterAttributeCollector($this->io, $this->parser);
         foreach ($classReflection->getMethods() as $methodReflection) {
             foreach ($this->getMethodAttributes($methodReflection) as $attribute) {
                 if (self::isAttributeIgnored($attribute->getName())) {
@@ -90,6 +93,11 @@ class ClassAttributeCollector
                     $attribute->getArguments(),
                     $method,
                 );
+            }
+
+            $parameterAttributes = $parameterAttributeCollector->collectAttributes($methodReflection);
+            if ($parameterAttributes !== []) {
+                $methodParameterAttributes[$methodReflection->getName()] = $parameterAttributes;
             }
         }
 
@@ -114,7 +122,7 @@ class ClassAttributeCollector
             }
         }
 
-        return [ $classAttributes, $methodAttributes, $propertyAttributes ];
+        return [ $classAttributes, $methodAttributes, $propertyAttributes, $methodParameterAttributes ];
     }
 
     /**
