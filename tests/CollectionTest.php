@@ -15,10 +15,13 @@ use Acme\Presentation\FileController;
 use Acme\Presentation\ImageController;
 use Acme\PSR4\ActiveRecord\Article;
 use Acme\PSR4\Presentation\ArticleController;
+use Acme81\Attribute\ParameterA;
+use Acme81\Attribute\ParameterB;
 use olvlvl\ComposerAttributeCollector\Attributes;
 use olvlvl\ComposerAttributeCollector\Collection;
 use olvlvl\ComposerAttributeCollector\TargetClass;
 use olvlvl\ComposerAttributeCollector\TargetMethod;
+use olvlvl\ComposerAttributeCollector\TargetMethodParameter;
 use olvlvl\ComposerAttributeCollector\TargetProperty;
 use PHPUnit\Framework\TestCase;
 
@@ -35,6 +38,8 @@ final class CollectionTest extends TestCase
                     [ [ '/images' ], ImageController::class ],
                     [ [ '/files' ], FileController::class ],
                 ],
+            ],
+            [
             ],
             [
             ],
@@ -69,6 +74,8 @@ final class CollectionTest extends TestCase
                 ],
             ],
             [
+            ],
+            [
             ]
         );
 
@@ -78,6 +85,36 @@ final class CollectionTest extends TestCase
             new TargetMethod(new Route('/recent'), ArticleController::class, 'recent'),
             new TargetMethod(new Get(), ArticleController::class, 'show'),
             new TargetMethod(new Post(), ArticleController::class, 'create'),
+        ], $actual);
+    }
+
+    public function testFilterTargetMethodParameters(): void
+    {
+        $collection = new Collection(
+            [
+            ],
+            [
+            ],
+            [
+            ],
+            [
+                ParameterA::class => [
+                    [ [ 'a' ], ArticleController::class, 'myMethod', 'myParamA', ],
+                    [ [ 'a2' ], ArticleController::class, 'myMethod', 'myParamA2' ],
+                    [ [ 'a3' ], ArticleController::class, 'myFoo', 'fooParam' ],
+                ],
+                ParameterB::class => [
+                    [ [ 'b', 'more data'], ArticleController::class, 'myMethod', 'myParamB' ],
+                ],
+            ]
+        );
+
+        $actual = $collection->filterTargetMethodParameters(fn($a) => is_a($a, ParameterA::class, true));
+
+        $this->assertEquals([
+            new TargetMethodParameter(new ParameterA('a'), ArticleController::class, 'myMethod', 'myParamA'),
+            new TargetMethodParameter(new ParameterA('a2'), ArticleController::class, 'myMethod', 'myParamA2'),
+            new TargetMethodParameter(new ParameterA('a3'), ArticleController::class, 'myFoo', 'fooParam'),
         ], $actual);
     }
 
@@ -110,6 +147,8 @@ final class CollectionTest extends TestCase
                 Text::class => [
                     [ [ ], Article::class, 'body' ],
                 ]
+            ],
+            [
             ]
         );
 
@@ -155,6 +194,8 @@ final class CollectionTest extends TestCase
                 Text::class => [
                     [ [ ], Article::class, 'body' ],
                 ]
+            ],
+            [
             ]
         );
 

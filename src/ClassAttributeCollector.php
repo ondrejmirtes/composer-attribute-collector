@@ -4,6 +4,7 @@ namespace olvlvl\ComposerAttributeCollector;
 
 use Attribute;
 use Composer\IO\IOInterface;
+use LogicException;
 use PhpParser\ConstExprEvaluationException;
 use PhpParser\ConstExprEvaluator;
 use PhpParser\Node;
@@ -16,6 +17,7 @@ use PhpParser\Parser;
 use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionException;
+use ReflectionMethod;
 use ReflectionProperty;
 
 use function file_get_contents;
@@ -45,6 +47,7 @@ class ClassAttributeCollector
      *     array<TransientTargetClass>,
      *     array<TransientTargetMethod>,
      *     array<TransientTargetProperty>,
+     *     array<non-empty-string, array<TransientTargetMethodParameter>>,
      * }
      *
      * @throws ReflectionException
@@ -54,7 +57,7 @@ class ClassAttributeCollector
         $classReflection = new ReflectionClass($class);
 
         if ($this->isAttribute($classReflection)) {
-            return [ [], [], [] ];
+            return [ [], [], [], [] ];
         }
 
         $classAttributes = [];
@@ -74,23 +77,15 @@ class ClassAttributeCollector
         }
 
         $methodAttributes = [];
+        $methodParameterAttributes = [];
 
         foreach ($classReflection->getMethods() as $methodReflection) {
-            foreach ($this->getMethodAttributes($methodReflection) as $attribute) {
-                if (self::isAttributeIgnored($attribute->getName())) {
-                    continue;
-                }
-
-                $method = $methodReflection->name;
-
-                $this->io->debug("Found attribute {$attribute->getName()} on $class::$method");
-
-                $methodAttributes[] = new TransientTargetMethod(
-                    $attribute->getName(),
-                    $attribute->getArguments(),
-                    $method,
-                );
-            }
+            $this->collectMethodAndParameterAttributes(
+                $class,
+                $methodReflection,
+                $methodAttributes,
+                $methodParameterAttributes,
+            );
         }
 
         $propertyAttributes = [];
@@ -112,9 +107,18 @@ class ClassAttributeCollector
                     $property,
                 );
             }
+
+            foreach($this->getPropertyHooks($propertyReflection) as $methodReflection) {
+                $this->collectMethodAndParameterAttributes(
+                    $class,
+                    $methodReflection,
+                    $methodAttributes,
+                    $methodParameterAttributes,
+                );
+            }
         }
 
-        return [ $classAttributes, $methodAttributes, $propertyAttributes ];
+        return [ $classAttributes, $methodAttributes, $propertyAttributes, $methodParameterAttributes ];
     }
 
     /**
@@ -362,5 +366,50 @@ class ClassAttributeCollector
         }
 
         return $this->attrGroupsToAttributes($methodVisitor->methodNodeToReturn->attrGroups);
+    }
+
+    /**
+     * @return array<ReflectionMethod>
+     */
+    private function getPropertyHooks(\ReflectionProperty $propertyReflection): array
+    {
+        if (PHP_VERSION_ID >= 80400) {
+            return $propertyReflection->getHooks();
+        }
+
+        // todo implement php-parser based inspection
+        throw new LogicException("Implement me");
+    }
+
+    /**
+     * @param string $class
+     * @param ReflectionMethod $methodReflection
+     * @param array<TransientTargetMethod> $methodAttributes
+     * @param array<non-empty-string, array<TransientTargetMethodParameter>> $methodParameterAttributes
+     * @return void
+     */
+    private function collectMethodAndParameterAttributes(string $class, \ReflectionMethod $methodReflection, array &$methodAttributes, array &$methodParameterAttributes): void
+    {
+        $parameterAttributeCollector = new ParameterAttributeCollector($this->io, $this->parser);
+        foreach ($this->getMethodAttributes($methodReflection) as $attribute) {
+            if (self::isAttributeIgnored($attribute->getName())) {
+                continue;
+            }
+
+            $method = $methodReflection->name;
+
+            $this->io->debug("Found attribute {$attribute->getName()} on $class::$method");
+
+            $methodAttributes[] = new TransientTargetMethod(
+                $attribute->getName(),
+                $attribute->getArguments(),
+                $method,
+            );
+        }
+
+        $parameterAttributes = $parameterAttributeCollector->collectAttributes($methodReflection);
+        if ($parameterAttributes !== []) {
+            $methodParameterAttributes[$methodReflection->getName()] = $parameterAttributes;
+        }
     }
 }

@@ -12,6 +12,7 @@ use Composer\IO\NullIO;
 use olvlvl\ComposerAttributeCollector\ClassAttributeCollector;
 use olvlvl\ComposerAttributeCollector\TransientTargetClass;
 use olvlvl\ComposerAttributeCollector\TransientTargetMethod;
+use olvlvl\ComposerAttributeCollector\TransientTargetMethodParameter;
 use olvlvl\ComposerAttributeCollector\TransientTargetProperty;
 use PhpParser\ParserFactory;
 use PHPUnit\Framework\TestCase;
@@ -57,6 +58,7 @@ final class ClassAttributeCollectorTest extends TestCase
                     [],
                     [],
                     [],
+                    [],
                 ]
             ],
 
@@ -69,6 +71,7 @@ final class ClassAttributeCollectorTest extends TestCase
                     ],
                     [],
                     [],
+                    [],
                 ]
             ],
 
@@ -78,6 +81,7 @@ final class ClassAttributeCollectorTest extends TestCase
                     [
                         new TransientTargetClass('Acme\Attribute\Handler', []),
                     ],
+                    [],
                     [],
                     [],
                 ]
@@ -100,8 +104,35 @@ final class ClassAttributeCollectorTest extends TestCase
                             [ "/articles/{id}", 'GET', 'articles:show' ],
                             'show',
                         ),
+                        new TransientTargetMethod(
+                            'Acme\Attribute\Route',
+                            [ "/articles/method/", 'GET', 'articles:method' ],
+                            'aMethod',
+                        ),
                     ],
                     [],
+                    [
+                        'aMethod' => [
+                            new TransientTargetMethodParameter(
+                                'Acme81\Attribute\ParameterA',
+                                ["my parameter label"],
+                                'aMethod',
+                                'myParameter'
+                            ),
+                            new TransientTargetMethodParameter(
+                                'Acme81\Attribute\ParameterB',
+                                ["my 2nd parameter label", "some more data"],
+                                'aMethod',
+                                'anotherParameter'
+                            ),
+                            new TransientTargetMethodParameter(
+                                'Acme81\Attribute\ParameterA',
+                                ["my yet another parameter label"],
+                                'aMethod',
+                                'yetAnotherParameter'
+                            ),
+                        ]
+                    ],
                 ]
             ],
 
@@ -112,6 +143,7 @@ final class ClassAttributeCollectorTest extends TestCase
                     [
                         new TransientTargetMethod('Acme\Attribute\Subscribe', [], 'onEventA'),
                     ],
+                    [],
                     [],
                 ]
             ],
@@ -132,6 +164,7 @@ final class ClassAttributeCollectorTest extends TestCase
                         new TransientTargetProperty('Acme\Attribute\ActiveRecord\Text', [], 'body'),
                         new TransientTargetProperty('Acme\Attribute\ActiveRecord\Boolean', [], 'active'),
                     ],
+                    [],
                 ]
             ],
 
