@@ -112,7 +112,7 @@ final class ClassAttributeCollectorTest extends TestCase
                     ],
                     [],
                     [
-                        'aMethod' => [
+                        [
                             new TransientTargetMethodParameter(
                                 'Acme81\Attribute\ParameterA',
                                 ["my parameter label"],

@@ -26,7 +26,7 @@ class MemoizeAttributeCollector
      *     array<TransientTargetClass>,
      *     array<TransientTargetMethod>,
      *     array<TransientTargetProperty>,
-     *     array<non-empty-string, array<TransientTargetMethodParameter>>,
+     *     array<array<TransientTargetMethodParameter>>,
      * }>
      *     Where _key_ is a class and _value is an array where:
      *     - `0` is a timestamp

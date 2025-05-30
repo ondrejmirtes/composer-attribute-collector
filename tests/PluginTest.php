@@ -188,6 +188,7 @@ final class PluginTest extends TestCase
             [
                 Subscribe::class,
                 [
+                    [ new Subscribe(), 'Acme81\PSR4\Presentation\HookedProperties::$foo::set' ],
                     [ new Subscribe(), 'Acme\PSR4\SubscriberA::onEventA' ],
                     [ new Subscribe(), 'Acme\PSR4\SubscriberB::onEventA' ],
                 ]
@@ -219,6 +220,10 @@ final class PluginTest extends TestCase
             [
                 ParameterA::class,
                 [
+                    [
+                        new ParameterA('a hook parameter'),
+                        'Acme81\PSR4\Presentation\HookedProperties::$foo::set(value)'
+                    ],
                     [
                         new ParameterA('my parameter label'),
                         'Acme\PSR4\Presentation\ArticleController::aMethod(myParameter)'
@@ -358,6 +363,7 @@ final class PluginTest extends TestCase
         );
 
         $this->assertEquals([
+            [ new ParameterA('a hook parameter'), 'Acme81\PSR4\Presentation\HookedProperties::$foo::set(value)' ],
             [ new ParameterA("my parameter label"), 'Acme\PSR4\Presentation\ArticleController::aMethod(myParameter)' ],
             [ new ParameterA('my yet another parameter label'), 'Acme\PSR4\Presentation\ArticleController::aMethod(yetAnotherParameter)' ],
         ], $this->collectMethodParameters($actual));
