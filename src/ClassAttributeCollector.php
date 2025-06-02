@@ -107,15 +107,6 @@ class ClassAttributeCollector
                     $property,
                 );
             }
-
-            foreach($this->getPropertyHooks($propertyReflection) as $methodReflection) {
-                $this->collectMethodAndParameterAttributes(
-                    $class,
-                    $methodReflection,
-                    $methodAttributes,
-                    $methodParameterAttributes,
-                );
-            }
         }
 
         return [ $classAttributes, $methodAttributes, $propertyAttributes, $methodParameterAttributes ];
@@ -366,19 +357,6 @@ class ClassAttributeCollector
         }
 
         return $this->attrGroupsToAttributes($methodVisitor->methodNodeToReturn->attrGroups);
-    }
-
-    /**
-     * @return array<ReflectionMethod>
-     */
-    private function getPropertyHooks(\ReflectionProperty $propertyReflection): array
-    {
-        if (PHP_VERSION_ID >= 80400) {
-            return $propertyReflection->getHooks();
-        }
-
-        // todo implement php-parser based inspection
-        throw new LogicException("Implement me");
     }
 
     /**
