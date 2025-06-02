@@ -4,11 +4,7 @@ namespace olvlvl\ComposerAttributeCollector;
 
 use Attribute;
 use Composer\IO\IOInterface;
-use LogicException;
-use PhpParser\ConstExprEvaluationException;
-use PhpParser\ConstExprEvaluator;
 use PhpParser\Node;
-use PhpParser\Node\Expr;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
@@ -184,7 +180,7 @@ class ClassAttributeCollector
             return [];
         }
 
-        return $this->attrGroupsToAttributes($classVisitor->classNodeToReturn->attrGroups);
+        return (new AttributeGroupsReflector())->attrGroupsToAttributes($classVisitor->classNodeToReturn->attrGroups);
     }
 
     /**
@@ -205,42 +201,6 @@ class ClassAttributeCollector
         $nameTraverser = new NodeTraverser(new NameResolver());
 
         return $this->parserCache[$file] = $nameTraverser->traverse($ast);
-    }
-
-    /**
-     * @param Node\AttributeGroup[] $attrGroups
-     * @return ReflectionAttribute<object>[]
-     */
-    private function attrGroupsToAttributes(array $attrGroups): array
-    {
-        $evaluator = new ConstExprEvaluator(function (Expr $expr) {
-            if ($expr instanceof Expr\ClassConstFetch && $expr->class instanceof Node\Name && $expr->name instanceof Node\Identifier) {
-                return constant(sprintf('%s::%s', $expr->class->toString(), $expr->name->toString()));
-            }
-
-            throw new ConstExprEvaluationException("Expression of type {$expr->getType()} cannot be evaluated");
-        });
-
-        $attributes = [];
-        foreach ($attrGroups as $attrGroup) {
-            foreach ($attrGroup->attrs as $attr) {
-                $argValues = [];
-                foreach ($attr->args as $i => $arg) {
-                    if ($arg->name === null) {
-                        $argValues[$i] = $evaluator->evaluateDirectly($arg->value);
-                        continue;
-                    }
-
-                    $argValues[$arg->name->toString()] = $evaluator->evaluateDirectly($arg->value);
-                }
-                $attributes[] = new FakeAttribute(
-                    $attr->name,
-                    $argValues,
-                );
-            }
-        }
-
-        return $attributes; // @phpstan-ignore return.type
     }
 
     /**
@@ -299,7 +259,7 @@ class ClassAttributeCollector
             return [];
         }
 
-        return $this->attrGroupsToAttributes($propertyVisitor->propertyNodeToReturn->attrGroups);
+        return (new AttributeGroupsReflector())->attrGroupsToAttributes($propertyVisitor->propertyNodeToReturn->attrGroups);
     }
 
     /**
@@ -356,7 +316,7 @@ class ClassAttributeCollector
             return [];
         }
 
-        return $this->attrGroupsToAttributes($methodVisitor->methodNodeToReturn->attrGroups);
+        return (new AttributeGroupsReflector())->attrGroupsToAttributes($methodVisitor->methodNodeToReturn->attrGroups);
     }
 
     /**
