@@ -34,7 +34,7 @@ final class ArticleController
         #[ParameterB("my 2nd parameter label", "some more data")]
         $anotherParameter,
         #[ParameterA("my yet another parameter label")]
-        $yetAnotherParameter,
+        $yetAnotherParameter
     ) {
 
     }

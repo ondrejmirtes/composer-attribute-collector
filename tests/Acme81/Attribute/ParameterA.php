@@ -9,7 +9,7 @@ class ParameterA
 {
     public string $label;
     public function __construct(
-        string $label = '',
+        string $label = ''
     ) {
         $this->label = $label;
     }
