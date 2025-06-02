@@ -28,13 +28,13 @@ class ClassAttributeCollector
 {
     private IOInterface $io;
     private Parser $parser;
+    private CachedParser $cachedParser;
 
-    /** @var array<string, Node[]> */
-    private array $parserCache = [];
     public function __construct(IOInterface $io, Parser $parser)
     {
         $this->io = $io;
         $this->parser = $parser;
+        $this->cachedParser = new CachedParser($io, $parser);
     }
     /**
      * @param class-string $class
@@ -188,19 +188,7 @@ class ClassAttributeCollector
      */
     private function parse(string $file): array
     {
-        if (isset($this->parserCache[$file])) {
-            return $this->parserCache[$file];
-        }
-        $contents = file_get_contents($file);
-        if ($contents === false) {
-            return [];
-        }
-
-        $ast = $this->parser->parse($contents);
-        assert($ast !== null);
-        $nameTraverser = new NodeTraverser(new NameResolver());
-
-        return $this->parserCache[$file] = $nameTraverser->traverse($ast);
+        return $this->cachedParser->parse($file);
     }
 
     /**
