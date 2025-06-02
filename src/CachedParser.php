@@ -13,14 +13,12 @@ use PhpParser\Parser;
  */
 class CachedParser
 {
-    private IOInterface $io;
     private Parser $parser;
 
     /** @var array<string, Node[]> */
     private array $parserCache = [];
 
-    public function __construct(IOInterface $io, Parser $parser) {
-        $this->io = $io;
+    public function __construct(Parser $parser) {
         $this->parser = $parser;
     }
 

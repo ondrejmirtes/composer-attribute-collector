@@ -34,7 +34,7 @@ class ClassAttributeCollector
     {
         $this->io = $io;
         $this->parser = $parser;
-        $this->cachedParser = new CachedParser($io, $parser);
+        $this->cachedParser = new CachedParser($parser);
     }
     /**
      * @param class-string $class

@@ -16,15 +16,12 @@ use PhpParser\Parser;
 class ParameterAttributeCollector
 {
     private IOInterface $io;
-    private Parser $parser;
-
     private CachedParser $cachedParser;
 
     public function __construct(IOInterface $io, Parser $parser)
     {
         $this->io = $io;
-        $this->parser = $parser;
-        $this->cachedParser = new CachedParser($io, $parser);
+        $this->cachedParser = new CachedParser($parser);
     }
 
     /**
