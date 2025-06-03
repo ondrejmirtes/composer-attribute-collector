@@ -4,10 +4,7 @@ namespace olvlvl\ComposerAttributeCollector;
 
 use Attribute;
 use Composer\IO\IOInterface;
-use PhpParser\ConstExprEvaluationException;
-use PhpParser\ConstExprEvaluator;
 use PhpParser\Node;
-use PhpParser\Node\Expr;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
@@ -16,6 +13,7 @@ use PhpParser\Parser;
 use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionException;
+use ReflectionMethod;
 use ReflectionProperty;
 
 use function file_get_contents;
@@ -29,14 +27,12 @@ use const PHP_VERSION_ID;
 class ClassAttributeCollector
 {
     private IOInterface $io;
-    private Parser $parser;
+    private CachedParser $cachedParser;
 
-    /** @var array<string, Node[]> */
-    private array $parserCache = [];
     public function __construct(IOInterface $io, Parser $parser)
     {
         $this->io = $io;
-        $this->parser = $parser;
+        $this->cachedParser = new CachedParser($parser);
     }
     /**
      * @param class-string $class
@@ -45,6 +41,7 @@ class ClassAttributeCollector
      *     array<TransientTargetClass>,
      *     array<TransientTargetMethod>,
      *     array<TransientTargetProperty>,
+     *     array<array<TransientTargetMethodParameter>>,
      * }
      *
      * @throws ReflectionException
@@ -54,7 +51,7 @@ class ClassAttributeCollector
         $classReflection = new ReflectionClass($class);
 
         if ($this->isAttribute($classReflection)) {
-            return [ [], [], [] ];
+            return [ [], [], [], [] ];
         }
 
         $classAttributes = [];
@@ -74,23 +71,15 @@ class ClassAttributeCollector
         }
 
         $methodAttributes = [];
+        $methodParameterAttributes = [];
 
         foreach ($classReflection->getMethods() as $methodReflection) {
-            foreach ($this->getMethodAttributes($methodReflection) as $attribute) {
-                if (self::isAttributeIgnored($attribute->getName())) {
-                    continue;
-                }
-
-                $method = $methodReflection->name;
-
-                $this->io->debug("Found attribute {$attribute->getName()} on $class::$method");
-
-                $methodAttributes[] = new TransientTargetMethod(
-                    $attribute->getName(),
-                    $attribute->getArguments(),
-                    $method,
-                );
-            }
+            $this->collectMethodAndParameterAttributes(
+                $class,
+                $methodReflection,
+                $methodAttributes,
+                $methodParameterAttributes,
+            );
         }
 
         $propertyAttributes = [];
@@ -114,7 +103,7 @@ class ClassAttributeCollector
             }
         }
 
-        return [ $classAttributes, $methodAttributes, $propertyAttributes ];
+        return [ $classAttributes, $methodAttributes, $propertyAttributes, $methodParameterAttributes ];
     }
 
     /**
@@ -189,7 +178,7 @@ class ClassAttributeCollector
             return [];
         }
 
-        return $this->attrGroupsToAttributes($classVisitor->classNodeToReturn->attrGroups);
+        return (new AttributeGroupsReflector())->attrGroupsToAttributes($classVisitor->classNodeToReturn->attrGroups);
     }
 
     /**
@@ -197,55 +186,7 @@ class ClassAttributeCollector
      */
     private function parse(string $file): array
     {
-        if (isset($this->parserCache[$file])) {
-            return $this->parserCache[$file];
-        }
-        $contents = file_get_contents($file);
-        if ($contents === false) {
-            return [];
-        }
-
-        $ast = $this->parser->parse($contents);
-        assert($ast !== null);
-        $nameTraverser = new NodeTraverser(new NameResolver());
-
-        return $this->parserCache[$file] = $nameTraverser->traverse($ast);
-    }
-
-    /**
-     * @param Node\AttributeGroup[] $attrGroups
-     * @return ReflectionAttribute<object>[]
-     */
-    private function attrGroupsToAttributes(array $attrGroups): array
-    {
-        $evaluator = new ConstExprEvaluator(function (Expr $expr) {
-            if ($expr instanceof Expr\ClassConstFetch && $expr->class instanceof Node\Name && $expr->name instanceof Node\Identifier) {
-                return constant(sprintf('%s::%s', $expr->class->toString(), $expr->name->toString()));
-            }
-
-            throw new ConstExprEvaluationException("Expression of type {$expr->getType()} cannot be evaluated");
-        });
-
-        $attributes = [];
-        foreach ($attrGroups as $attrGroup) {
-            foreach ($attrGroup->attrs as $attr) {
-                $argValues = [];
-                foreach ($attr->args as $i => $arg) {
-                    if ($arg->name === null) {
-                        $argValues[$i] = $evaluator->evaluateDirectly($arg->value);
-                        continue;
-                    }
-
-                    $argValues[$arg->name->toString()] = $evaluator->evaluateDirectly($arg->value);
-                }
-                $attributes[] = new FakeAttribute(
-                    $attr->name,
-                    $argValues,
-                );
-            }
-        }
-
-        return $attributes; // @phpstan-ignore return.type
+        return $this->cachedParser->parse($file);
     }
 
     /**
@@ -304,7 +245,7 @@ class ClassAttributeCollector
             return [];
         }
 
-        return $this->attrGroupsToAttributes($propertyVisitor->propertyNodeToReturn->attrGroups);
+        return (new AttributeGroupsReflector())->attrGroupsToAttributes($propertyVisitor->propertyNodeToReturn->attrGroups);
     }
 
     /**
@@ -361,6 +302,38 @@ class ClassAttributeCollector
             return [];
         }
 
-        return $this->attrGroupsToAttributes($methodVisitor->methodNodeToReturn->attrGroups);
+        return (new AttributeGroupsReflector())->attrGroupsToAttributes($methodVisitor->methodNodeToReturn->attrGroups);
+    }
+
+    /**
+     * @param string $class
+     * @param ReflectionMethod $methodReflection
+     * @param array<TransientTargetMethod> $methodAttributes
+     * @param array<array<TransientTargetMethodParameter>> $methodParameterAttributes
+     * @return void
+     */
+    private function collectMethodAndParameterAttributes(string $class, \ReflectionMethod $methodReflection, array &$methodAttributes, array &$methodParameterAttributes): void
+    {
+        $parameterAttributeCollector = new ParameterAttributeCollector($this->io, $this->cachedParser);
+        foreach ($this->getMethodAttributes($methodReflection) as $attribute) {
+            if (self::isAttributeIgnored($attribute->getName())) {
+                continue;
+            }
+
+            $method = $methodReflection->name;
+
+            $this->io->debug("Found attribute {$attribute->getName()} on $class::$method");
+
+            $methodAttributes[] = new TransientTargetMethod(
+                $attribute->getName(),
+                $attribute->getArguments(),
+                $method,
+            );
+        }
+
+        $parameterAttributes = $parameterAttributeCollector->collectAttributes($methodReflection);
+        if ($parameterAttributes !== []) {
+            $methodParameterAttributes[] = $parameterAttributes;
+        }
     }
 }
