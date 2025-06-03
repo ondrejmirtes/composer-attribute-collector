@@ -11,7 +11,8 @@ use ReflectionAttribute;
 /**
  * @internal
  */
-class AttributeGroupsReflector {
+class AttributeGroupsReflector
+{
     /**
      * @param Node\AttributeGroup[] $attrGroups
      * @return ReflectionAttribute<object>[]

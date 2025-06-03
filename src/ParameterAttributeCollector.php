@@ -2,7 +2,6 @@
 
 namespace olvlvl\ComposerAttributeCollector;
 
-
 use Composer\IO\IOInterface;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\ClassLike;
@@ -30,7 +29,7 @@ class ParameterAttributeCollector
     public function collectAttributes(\ReflectionFunctionAbstract $reflectionFunctionAbstract): array
     {
         $funcParameterAttributes = [];
-        foreach($reflectionFunctionAbstract->getParameters() as $parameter) {
+        foreach ($reflectionFunctionAbstract->getParameters() as $parameter) {
             $attributes = $this->getParameterAttributes($parameter);
             $functionName = $reflectionFunctionAbstract->name;
             $parameterName = $parameter->name;
@@ -39,12 +38,12 @@ class ParameterAttributeCollector
 
             $paramLabel = '';
             if ($reflectionFunctionAbstract instanceof \ReflectionMethod) {
-                $paramLabel = $reflectionFunctionAbstract->class .'::'.$functionName .'(' . $parameterName .')';
+                $paramLabel = $reflectionFunctionAbstract->class . '::' . $functionName . '(' . $parameterName . ')';
             } elseif ($reflectionFunctionAbstract instanceof \ReflectionFunction) {
-                $paramLabel = $functionName . '(' . $parameterName .')';
+                $paramLabel = $functionName . '(' . $parameterName . ')';
             }
 
-            foreach($attributes as $attribute) {
+            foreach ($attributes as $attribute) {
                 $this->io->debug("Found attribute {$attribute->getName()} on $paramLabel");
 
                 $funcParameterAttributes[] = new TransientTargetMethodParameter(
@@ -136,5 +135,4 @@ class ParameterAttributeCollector
     {
         return $this->cachedParser->parse($file);
     }
-
 }

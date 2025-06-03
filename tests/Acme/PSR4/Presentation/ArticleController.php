@@ -36,6 +36,5 @@ final class ArticleController
         #[ParameterA("my yet another parameter label")]
         $yetAnotherParameter
     ) {
-
     }
 }

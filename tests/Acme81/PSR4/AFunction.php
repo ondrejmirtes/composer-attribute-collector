@@ -8,5 +8,4 @@ function aFunc(
     #[ParameterA("my function parameter label")]
     $aParameter
 ) {
-
 }

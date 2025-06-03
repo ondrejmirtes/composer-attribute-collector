@@ -66,7 +66,7 @@ final class TransientCollectionRenderer
                     $target = [$target];
                 }
 
-                foreach($target as $t) {
+                foreach ($target as $t) {
                     // args in order how the Target* classes expects them in __construct()
                     $args = [ $t->arguments, $class ];
 
