@@ -27,13 +27,11 @@ use const PHP_VERSION_ID;
 class ClassAttributeCollector
 {
     private IOInterface $io;
-    private Parser $parser;
     private CachedParser $cachedParser;
 
     public function __construct(IOInterface $io, Parser $parser)
     {
         $this->io = $io;
-        $this->parser = $parser;
         $this->cachedParser = new CachedParser($parser);
     }
     /**
