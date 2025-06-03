@@ -17,10 +17,10 @@ class ParameterAttributeCollector
     private IOInterface $io;
     private CachedParser $cachedParser;
 
-    public function __construct(IOInterface $io, Parser $parser)
+    public function __construct(IOInterface $io, CachedParser $parser)
     {
         $this->io = $io;
-        $this->cachedParser = new CachedParser($parser);
+        $this->cachedParser = $parser;
     }
 
     /**

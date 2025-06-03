@@ -316,7 +316,7 @@ class ClassAttributeCollector
      */
     private function collectMethodAndParameterAttributes(string $class, \ReflectionMethod $methodReflection, array &$methodAttributes, array &$methodParameterAttributes): void
     {
-        $parameterAttributeCollector = new ParameterAttributeCollector($this->io, $this->parser);
+        $parameterAttributeCollector = new ParameterAttributeCollector($this->io, $this->cachedParser);
         foreach ($this->getMethodAttributes($methodReflection) as $attribute) {
             if (self::isAttributeIgnored($attribute->getName())) {
                 continue;
