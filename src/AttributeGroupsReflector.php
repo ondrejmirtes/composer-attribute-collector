@@ -21,6 +21,10 @@ class AttributeGroupsReflector
     {
         $evaluator = new ConstExprEvaluator(function (Expr $expr) {
             if ($expr instanceof Expr\ClassConstFetch && $expr->class instanceof Node\Name && $expr->name instanceof Node\Identifier) {
+                if ($expr->name->toLowerString() === 'class') {
+                    return $expr->class->toString();
+                }
+
                 return constant(sprintf('%s::%s', $expr->class->toString(), $expr->name->toString()));
             }
 
