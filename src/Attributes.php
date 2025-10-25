@@ -13,7 +13,7 @@ final class Attributes
      * @var Closure():Collection|null
      */
     private static ?Closure $provider = null;
-    private static ?Collection $collection;
+    private static ?Collection $collection = null;
 
     public static function with(Closure $provider): ?Closure
     {
