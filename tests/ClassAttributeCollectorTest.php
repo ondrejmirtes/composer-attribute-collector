@@ -42,6 +42,11 @@ final class ClassAttributeCollectorTest extends TestCase
      */
     public function testCollectAttributes(string $class, array $expected): void
     {
+        $file = (new \ReflectionClass($class))->getFileName();
+        if ($file !== false) {
+            $this->sut->setClassMap([$class => $file]);
+        }
+
         $actual = $this->sut->collectAttributes($class);
 
         $this->assertEquals($expected, $actual);

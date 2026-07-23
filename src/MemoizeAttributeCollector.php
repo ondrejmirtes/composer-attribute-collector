@@ -54,6 +54,7 @@ class MemoizeAttributeCollector
     {
         $filterClasses = [];
         $classAttributeCollector = $this->classAttributeCollector;
+        $classAttributeCollector->setClassMap($classMap);
         $collector = new TransientCollection();
 
         foreach ($classMap as $class => $filepath) {

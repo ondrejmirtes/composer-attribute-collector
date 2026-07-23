@@ -4,11 +4,8 @@ namespace olvlvl\ComposerAttributeCollector;
 
 use Attribute;
 use Composer\IO\IOInterface;
+use PhpParser\Modifiers;
 use PhpParser\Node;
-use PhpParser\Node\Stmt\ClassLike;
-use PhpParser\NodeTraverser;
-use PhpParser\NodeVisitor\NameResolver;
-use PhpParser\NodeVisitorAbstract;
 use PhpParser\Parser;
 use ReflectionAttribute;
 use ReflectionClass;
@@ -16,8 +13,9 @@ use ReflectionException;
 use ReflectionMethod;
 use ReflectionProperty;
 
-use function file_get_contents;
-use function sprintf;
+use function array_merge;
+use function is_string;
+use function strtolower;
 
 use const PHP_VERSION_ID;
 
@@ -28,12 +26,24 @@ class ClassAttributeCollector
 {
     private IOInterface $io;
     private CachedParser $cachedParser;
+    private ClassAstLocator $classAstLocator;
 
     public function __construct(IOInterface $io, Parser $parser)
     {
         $this->io = $io;
         $this->cachedParser = new CachedParser($parser);
+        $this->classAstLocator = new ClassAstLocator($this->cachedParser);
     }
+
+    /**
+     * @param array<class-string, string> $classMap
+     *     Where _key_ is a class and _value_ its pathname.
+     */
+    public function setClassMap(array $classMap): void
+    {
+        $this->classAstLocator->setClassMap($classMap);
+    }
+
     /**
      * @param class-string $class
      *
@@ -48,6 +58,13 @@ class ClassAttributeCollector
      */
     public function collectAttributes(string $class): array
     {
+        if (PHP_VERSION_ID < 80000) {
+            // Autoloading the class could cause an unrecoverable fatal error:
+            // the source or a class it depends on might use PHP 8 syntax.
+            // Everything is collected from the AST instead.
+            return $this->collectAttributesUsingParser($class);
+        }
+
         $classReflection = new ReflectionClass($class);
 
         if ($this->isAttribute($classReflection)) {
@@ -55,7 +72,7 @@ class ClassAttributeCollector
         }
 
         $classAttributes = [];
-        $attributes = $this->getClassAttributes($classReflection);
+        $attributes = $classReflection->getAttributes();
 
         foreach ($attributes as $attribute) {
             if (self::isAttributeIgnored($attribute->getName())) {
@@ -107,13 +124,253 @@ class ClassAttributeCollector
     }
 
     /**
+     * Collects attributes from the AST, without autoloading the class or anything it depends on.
+     *
+     * Unlike with reflection, attributes inherited from parent classes or traits are not
+     * collected.
+     *
+     * @param class-string $class
+     *
+     * @return array{
+     *     array<TransientTargetClass>,
+     *     array<TransientTargetMethod>,
+     *     array<TransientTargetProperty>,
+     *     array<array<TransientTargetMethodParameter>>,
+     * }
+     */
+    private function collectAttributesUsingParser(string $class): array
+    {
+        $classNode = $this->classAstLocator->findClassNode($class);
+
+        if ($classNode === null) {
+            return [ [], [], [], [] ];
+        }
+
+        foreach ($classNode->attrGroups as $attrGroup) {
+            foreach ($attrGroup->attrs as $attr) {
+                if ($attr->name->toString() === Attribute::class) {
+                    return [ [], [], [], [] ];
+                }
+            }
+        }
+
+        $reflector = new AttributeGroupsReflector($class, $this->classAstLocator);
+
+        $classAttributes = [];
+
+        foreach ($reflector->attrGroupsToAttributes($classNode->attrGroups) as $attribute) {
+            if (self::isAttributeIgnored($attribute->getName())) {
+                continue;
+            }
+
+            $this->io->debug("Found attribute {$attribute->getName()} on $class");
+
+            $classAttributes[] = new TransientTargetClass(
+                $attribute->getName(),
+                $attribute->getArguments(),
+            );
+        }
+
+        $methodAttributes = [];
+        $methodParameterAttributes = [];
+        $promotedPropertyAttributes = [];
+        $propertyAttributes = [];
+        $seenMethods = [];
+        $seenProperties = [];
+
+        // like with reflection, non-private methods and properties inherited along
+        // the extends chain are collected as members of this class too
+        foreach ($this->collectClassChain($class, $classNode) as $chainClass => $chainNode) {
+            $isSelf = $chainClass === $class;
+            $chainReflector = $isSelf ? $reflector : new AttributeGroupsReflector($chainClass, $this->classAstLocator);
+            $this->collectClassLikeMembers(
+                $class,
+                $chainNode,
+                $chainReflector,
+                $isSelf,
+                $seenMethods,
+                $seenProperties,
+                $methodAttributes,
+                $methodParameterAttributes,
+                $propertyAttributes,
+                $promotedPropertyAttributes,
+            );
+        }
+
+        return [
+            $classAttributes,
+            $methodAttributes,
+            array_merge($propertyAttributes, $promotedPropertyAttributes),
+            $methodParameterAttributes,
+        ];
+    }
+
+    /**
+     * @param class-string $class
+     * @return array<string, Node\Stmt\ClassLike>
+     */
+    private function collectClassChain(string $class, Node\Stmt\ClassLike $classNode): array
+    {
+        $chain = [ $class => $classNode ];
+        $current = $classNode;
+
+        while ($current instanceof Node\Stmt\Class_ && $current->extends !== null) {
+            $parent = $current->extends->toString();
+            if (isset($chain[$parent])) {
+                break;
+            }
+
+            $parentNode = $this->classAstLocator->findClassNode($parent);
+            if ($parentNode === null) {
+                break;
+            }
+
+            $chain[$parent] = $parentNode;
+            $current = $parentNode;
+        }
+
+        return $chain;
+    }
+
+    /**
+     * @param array<lowercase-string, true> $seenMethods
+     * @param array<string, true> $seenProperties
+     * @param array<TransientTargetMethod> $methodAttributes
+     * @param array<array<TransientTargetMethodParameter>> $methodParameterAttributes
+     * @param array<TransientTargetProperty> $propertyAttributes
+     * @param array<TransientTargetProperty> $promotedPropertyAttributes
+     */
+    private function collectClassLikeMembers(
+        string $class,
+        Node\Stmt\ClassLike $classNode,
+        AttributeGroupsReflector $reflector,
+        bool $isSelf,
+        array &$seenMethods,
+        array &$seenProperties,
+        array &$methodAttributes,
+        array &$methodParameterAttributes,
+        array &$propertyAttributes,
+        array &$promotedPropertyAttributes
+    ): void {
+        foreach ($classNode->getMethods() as $methodNode) {
+            $method = $methodNode->name->toString();
+
+            if (!$isSelf && $methodNode->isPrivate()) {
+                continue;
+            }
+
+            if (isset($seenMethods[strtolower($method)])) {
+                continue;
+            }
+            $seenMethods[strtolower($method)] = true;
+
+            foreach ($reflector->attrGroupsToAttributes($methodNode->attrGroups) as $attribute) {
+                if (self::isAttributeIgnored($attribute->getName())) {
+                    continue;
+                }
+
+                $this->io->debug("Found attribute {$attribute->getName()} on $class::$method");
+
+                $methodAttributes[] = new TransientTargetMethod(
+                    $attribute->getName(),
+                    $attribute->getArguments(),
+                    $method,
+                );
+            }
+
+            $parameterAttributes = [];
+
+            foreach ($methodNode->params as $parameterNode) {
+                if (!$parameterNode->var instanceof Node\Expr\Variable || !is_string($parameterNode->var->name)) {
+                    continue;
+                }
+
+                $parameter = $parameterNode->var->name;
+                assert($parameter !== '');
+
+                foreach ($reflector->attrGroupsToAttributes($parameterNode->attrGroups) as $attribute) {
+                    if (self::isAttributeIgnored($attribute->getName())) {
+                        continue;
+                    }
+
+                    $this->io->debug("Found attribute {$attribute->getName()} on $class::$method(\$$parameter)");
+
+                    $parameterAttributes[] = new TransientTargetMethodParameter(
+                        $attribute->getName(),
+                        $attribute->getArguments(),
+                        $method,
+                        $parameter,
+                    );
+
+                    // an attribute on a promoted constructor property is also visible
+                    // through ReflectionProperty; inherited private properties are not
+                    if (
+                        $parameterNode->flags !== 0
+                        && ($isSelf || ($parameterNode->flags & Modifiers::PRIVATE) === 0)
+                    ) {
+                        $promotedPropertyAttributes[] = new TransientTargetProperty(
+                            $attribute->getName(),
+                            $attribute->getArguments(),
+                            $parameter,
+                        );
+                    }
+                }
+            }
+
+            if ($parameterAttributes !== []) {
+                $methodParameterAttributes[] = $parameterAttributes;
+            }
+        }
+
+        foreach ($classNode->getProperties() as $propertyNode) {
+            if (!$isSelf && $propertyNode->isPrivate()) {
+                continue;
+            }
+
+            $propertyNames = [];
+            foreach ($propertyNode->props as $propNode) {
+                $propertyNames[] = $propNode->name->toString();
+            }
+
+            $newPropertyNames = [];
+            foreach ($propertyNames as $property) {
+                if (isset($seenProperties[$property])) {
+                    continue;
+                }
+                $seenProperties[$property] = true;
+                $newPropertyNames[] = $property;
+            }
+
+            if ($newPropertyNames === []) {
+                continue;
+            }
+
+            foreach ($reflector->attrGroupsToAttributes($propertyNode->attrGroups) as $attribute) {
+                if (self::isAttributeIgnored($attribute->getName())) {
+                    continue;
+                }
+
+                foreach ($newPropertyNames as $property) {
+                    $this->io->debug("Found attribute {$attribute->getName()} on $class::$property");
+
+                    $propertyAttributes[] = new TransientTargetProperty(
+                        $attribute->getName(),
+                        $attribute->getArguments(),
+                        $property,
+                    );
+                }
+            }
+        }
+    }
+
+    /**
      * Determines if a class is an attribute.
      *
      * @param ReflectionClass<object> $classReflection
      */
     private function isAttribute(ReflectionClass $classReflection): bool
     {
-        foreach ($this->getClassAttributes($classReflection) as $attribute) {
+        foreach ($classReflection->getAttributes() as $attribute) {
             if ($attribute->getName() === Attribute::class) {
                 return true;
             }
@@ -136,173 +393,11 @@ class ClassAttributeCollector
     }
 
     /**
-     * @param ReflectionClass<object> $classReflection
-     * @return ReflectionAttribute<object>[]
-     */
-    private function getClassAttributes(ReflectionClass $classReflection): array
-    {
-        if (PHP_VERSION_ID >= 80000) {
-            return $classReflection->getAttributes();
-        }
-
-        if ($classReflection->getFileName() === false) {
-            return [];
-        }
-
-        $ast = $this->parse($classReflection->getFileName());
-        $classVisitor = new class ($classReflection->getName()) extends NodeVisitorAbstract {
-            private string $className;
-
-            public ?ClassLike $classNodeToReturn = null;
-
-            public function __construct(string $className)
-            {
-                $this->className = $className;
-            }
-
-            public function enterNode(Node $node)
-            {
-                if ($node instanceof ClassLike) {
-                    if ($node->namespacedName !== null && $node->namespacedName->toString() === $this->className) {
-                        $this->classNodeToReturn = $node;
-                    }
-                }
-
-                return null;
-            }
-        };
-        $traverser = new NodeTraverser($classVisitor);
-        $traverser->traverse($ast);
-
-        if ($classVisitor->classNodeToReturn === null) {
-            return [];
-        }
-
-        return (new AttributeGroupsReflector())->attrGroupsToAttributes($classVisitor->classNodeToReturn->attrGroups);
-    }
-
-    /**
-     * @return Node[]
-     */
-    private function parse(string $file): array
-    {
-        return $this->cachedParser->parse($file);
-    }
-
-    /**
      * @return ReflectionAttribute<object>[]
      */
     private function getPropertyAttributes(ReflectionProperty $propertyReflection): array
     {
-        if (PHP_VERSION_ID >= 80000) {
-            return $propertyReflection->getAttributes();
-        }
-
-        if ($propertyReflection->getDeclaringClass()->getFileName() === false) {
-            return [];
-        }
-
-        $ast = $this->parse($propertyReflection->getDeclaringClass()->getFileName());
-        $propertyVisitor = new class ($propertyReflection->getDeclaringClass()->getName(), $propertyReflection->getName()) extends NodeVisitorAbstract {
-            private string $className;
-
-            private string $propertyName;
-
-            public ?Node\Stmt\Property $propertyNodeToReturn = null;
-
-            public function __construct(string $className, string $propertyName)
-            {
-                $this->className = $className;
-                $this->propertyName = $propertyName;
-            }
-
-            public function enterNode(Node $node): ?int
-            {
-                if ($node instanceof ClassLike) {
-                    if ($node->namespacedName === null) {
-                        return self::DONT_TRAVERSE_CHILDREN;
-                    }
-                    if ($node->namespacedName->toString() !== $this->className) {
-                        return self::DONT_TRAVERSE_CHILDREN;
-                    }
-                }
-
-                if ($node instanceof Node\Stmt\Property) {
-                    foreach ($node->props as $prop) {
-                        if ($prop->name->toString() === $this->propertyName) {
-                            $this->propertyNodeToReturn = $node;
-                        }
-                    }
-                }
-
-                return null;
-            }
-        };
-        $traverser = new NodeTraverser($propertyVisitor);
-        $traverser->traverse($ast);
-
-        if ($propertyVisitor->propertyNodeToReturn === null) {
-            return [];
-        }
-
-        return (new AttributeGroupsReflector())->attrGroupsToAttributes($propertyVisitor->propertyNodeToReturn->attrGroups);
-    }
-
-    /**
-     * @return ReflectionAttribute<object>[]
-     */
-    private function getMethodAttributes(\ReflectionMethod $methodReflection): array
-    {
-        if (PHP_VERSION_ID >= 80000) {
-            return $methodReflection->getAttributes();
-        }
-
-        if ($methodReflection->getDeclaringClass()->getFileName() === false) {
-            return [];
-        }
-
-        $ast = $this->parse($methodReflection->getDeclaringClass()->getFileName());
-        $methodVisitor = new class ($methodReflection->getDeclaringClass()->getName(), $methodReflection->getName()) extends NodeVisitorAbstract {
-            private string $className;
-
-            private string $methodName;
-
-            public ?Node\Stmt\ClassMethod $methodNodeToReturn = null;
-
-            public function __construct(string $className, string $methodName)
-            {
-                $this->className = $className;
-                $this->methodName = $methodName;
-            }
-
-            public function enterNode(Node $node): ?int
-            {
-                if ($node instanceof ClassLike) {
-                    if ($node->namespacedName === null) {
-                        return self::DONT_TRAVERSE_CHILDREN;
-                    }
-                    if ($node->namespacedName->toString() !== $this->className) {
-                        return self::DONT_TRAVERSE_CHILDREN;
-                    }
-                }
-
-                if ($node instanceof Node\Stmt\ClassMethod) {
-                    if ($node->name->toString() === $this->methodName) {
-                        $this->methodNodeToReturn = $node;
-                    }
-                }
-
-                return null;
-            }
-        };
-        $traverser = new NodeTraverser($methodVisitor);
-        $traverser->traverse($ast);
-
-        if ($methodVisitor->methodNodeToReturn === null) {
-            return [];
-        }
-
-        return (new AttributeGroupsReflector())->attrGroupsToAttributes($methodVisitor->methodNodeToReturn->attrGroups);
+        return $propertyReflection->getAttributes();
     }
 
     /**
@@ -314,8 +409,8 @@ class ClassAttributeCollector
      */
     private function collectMethodAndParameterAttributes(string $class, \ReflectionMethod $methodReflection, array &$methodAttributes, array &$methodParameterAttributes): void
     {
-        $parameterAttributeCollector = new ParameterAttributeCollector($this->io, $this->cachedParser);
-        foreach ($this->getMethodAttributes($methodReflection) as $attribute) {
+        $parameterAttributeCollector = new ParameterAttributeCollector($this->io);
+        foreach ($methodReflection->getAttributes() as $attribute) {
             if (self::isAttributeIgnored($attribute->getName())) {
                 continue;
             }

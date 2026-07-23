@@ -64,7 +64,9 @@ final class PluginTest extends TestCase
         $vendorDir = __DIR__ . '/sandbox';
         $filepath = "$vendorDir/attributes.php";
         $exclude = [
-            "$cwd/tests/Acme/PSR4/IncompatibleSignature.php"
+            "$cwd/tests/Acme/PSR4/IncompatibleSignature.php",
+            // written by MemoizeClassMapGeneratorTest, may or may not exist
+            "$cwd/tests/sandbox-memoize-classmap",
         ];
 
         if (PHP_VERSION_ID < 80100) {
@@ -187,10 +189,18 @@ final class PluginTest extends TestCase
             ],
             [
                 Subscribe::class,
-                [
-                    [ new Subscribe(), 'Acme\PSR4\SubscriberA::onEventA' ],
-                    [ new Subscribe(), 'Acme\PSR4\SubscriberB::onEventA' ],
-                ]
+                PHP_VERSION_ID < 80000
+                    ? [
+                        // without reflection, classes with missing parents or interfaces are not discarded
+                        [ new Subscribe(), 'Acme\PSR4\MissingInterface::onEventA' ],
+                        [ new Subscribe(), 'Acme\PSR4\MissingParent::onEventA' ],
+                        [ new Subscribe(), 'Acme\PSR4\SubscriberA::onEventA' ],
+                        [ new Subscribe(), 'Acme\PSR4\SubscriberB::onEventA' ],
+                    ]
+                    : [
+                        [ new Subscribe(), 'Acme\PSR4\SubscriberA::onEventA' ],
+                        [ new Subscribe(), 'Acme\PSR4\SubscriberB::onEventA' ],
+                    ]
             ],
 
         ];
