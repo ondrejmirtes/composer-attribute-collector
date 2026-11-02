@@ -2,7 +2,13 @@
 
 namespace olvlvl\ComposerAttributeCollector;
 
+use function implode;
+use function is_array;
+use function is_int;
 use function is_iterable;
+use function is_object;
+use function serialize;
+use function str_repeat;
 use function var_export;
 
 /**
@@ -47,7 +53,42 @@ final class TransientCollectionRenderer
     {
         $array = self::targetsToArray($targetByClass);
 
-        return var_export($array, true);
+        return self::export($array, 0);
+    }
+
+    /**
+     * Like var_export(), but objects created by `new` in attribute arguments are rendered so that they can be
+     * recreated: a `new` expression collected from the AST is rendered as is, and an object instantiated by
+     * reflection is serialized, because its constructor arguments are no longer known.
+     *
+     * @param mixed $value
+     */
+    private static function export($value, int $depth): string
+    {
+        if ($value instanceof TransientNewExpression) {
+            $arguments = [];
+            foreach ($value->arguments as $name => $argument) {
+                $arguments[] = (is_int($name) ? '' : "$name: ") . self::export($argument, $depth);
+            }
+
+            return "new \\$value->class(" . implode(', ', $arguments) . ')';
+        }
+
+        if (is_object($value) && !$value instanceof \UnitEnum) {
+            return '\\unserialize(' . var_export(serialize($value), true) . ')';
+        }
+
+        if (!is_array($value)) {
+            return var_export($value, true);
+        }
+
+        $indent = str_repeat('  ', $depth + 1);
+        $code = "array (\n";
+        foreach ($value as $key => $item) {
+            $code .= $indent . var_export($key, true) . ' => ' . self::export($item, $depth + 1) . ",\n";
+        }
+
+        return $code . str_repeat('  ', $depth) . ')';
     }
 
     /**

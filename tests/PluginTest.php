@@ -361,6 +361,30 @@ final class PluginTest extends TestCase
         $this->assertEquals($expected, $actual);
     }
 
+    /**
+     * @requires PHP >= 8.1
+     */
+    public function testNewInAttributeArguments(): void
+    {
+        $this->assertEquals([
+            new TargetClass(
+                new \Acme81\Attribute\Conditional(
+                    new \Acme81\Attribute\Route('/conditional', \Acme81\Attribute\Method::POST, 'conditional'),
+                    'feature',
+                ),
+                \Acme81\PSR4\ConditionalController::class,
+            ),
+        ], Attributes::findTargetClasses(\Acme81\Attribute\Conditional::class));
+
+        $this->assertEquals([
+            new TargetMethod(
+                new \Acme81\Attribute\Conditional(['get' => new \Acme81\Attribute\Get('/{id}')], 'other'),
+                \Acme81\PSR4\ConditionalController::class,
+                'show',
+            ),
+        ], Attributes::findTargetMethods(\Acme81\Attribute\Conditional::class));
+    }
+
     public function testFilterTargetMethodParameters(): void
     {
         $actual = Attributes::filterTargetMethodParameters(

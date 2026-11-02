@@ -69,7 +69,26 @@ class AttributeGroupsReflector
 
     private function createEvaluator(?string $selfClass): ConstExprEvaluator
     {
-        return new ConstExprEvaluator(function (Expr $expr) use ($selfClass) {
+        $evaluator = null;
+        $evaluator = new ConstExprEvaluator(function (Expr $expr) use ($selfClass, &$evaluator) {
+            if ($expr instanceof Expr\New_ && $expr->class instanceof Node\Name) {
+                assert($evaluator instanceof ConstExprEvaluator);
+
+                $arguments = [];
+                foreach ($expr->args as $i => $arg) {
+                    if (!$arg instanceof Node\Arg || $arg->unpack) {
+                        throw new ConstExprEvaluationException("Unsupported argument of new {$expr->class->toString()}");
+                    }
+
+                    $arguments[$arg->name !== null ? $arg->name->toString() : $i] = $evaluator->evaluateDirectly($arg->value);
+                }
+
+                /** @var class-string $class */
+                $class = $expr->class->toString();
+
+                return new TransientNewExpression($class, $arguments);
+            }
+
             if ($expr instanceof Node\Scalar\MagicConst\Class_ && $selfClass !== null) {
                 return $selfClass;
             }
@@ -103,6 +122,8 @@ class AttributeGroupsReflector
 
             throw new ConstExprEvaluationException("Expression of type {$expr->getType()} cannot be evaluated");
         });
+
+        return $evaluator;
     }
 
     /**
