@@ -22,6 +22,7 @@ use Acme\Attribute\Permission;
 use Acme\Attribute\Resource;
 use Acme\Attribute\Route;
 use Acme\Attribute\Subscribe;
+use Acme\Attribute\Wrapper;
 use Acme\PSR4\Presentation\ArticleController;
 use Acme81\Attribute\ParameterA;
 use Acme81\Attribute\ParameterB;
@@ -189,7 +190,7 @@ final class PluginTest extends TestCase
             ],
             [
                 Subscribe::class,
-                PHP_VERSION_ID < 80000
+                PHP_VERSION_ID < 80100
                     ? [
                         // without reflection, classes with missing parents or interfaces are not discarded
                         [ new Subscribe(), 'Acme\PSR4\MissingInterface::onEventA' ],
@@ -359,6 +360,17 @@ final class PluginTest extends TestCase
         );
 
         $this->assertEquals($expected, $actual);
+    }
+
+    public function testNewExpressionMarkerInAttributeArguments(): void
+    {
+        $this->assertEquals([
+            new TargetClass(new Wrapper(new Permission('is_admin')), \Acme\PSR4\WrappedByMarker::class),
+            new TargetClass(
+                new Wrapper([new Get('/{id}', 'show'), 'key' => 'not a new expression']),
+                \Acme\PSR4\WrappedByMarker::class,
+            ),
+        ], Attributes::findTargetClasses(Wrapper::class));
     }
 
     /**

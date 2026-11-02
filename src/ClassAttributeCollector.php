@@ -58,9 +58,10 @@ class ClassAttributeCollector
      */
     public function collectAttributes(string $class): array
     {
-        if (PHP_VERSION_ID < 80000) {
+        if (PHP_VERSION_ID < 80100) {
             // Autoloading the class could cause an unrecoverable fatal error:
-            // the source or a class it depends on might use PHP 8 syntax.
+            // the source or a class it depends on might use newer syntax,
+            // like `new` in attribute arguments, which is a compile error before PHP 8.1.
             // Everything is collected from the AST instead.
             return $this->collectAttributesUsingParser($class);
         }

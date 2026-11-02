@@ -58,13 +58,16 @@ final class TransientCollectionRenderer
 
     /**
      * Like var_export(), but objects created by `new` in attribute arguments are rendered so that they can be
-     * recreated: a `new` expression collected from the AST is rendered as is, and an object instantiated by
-     * reflection is serialized, because its constructor arguments are no longer known.
+     * recreated: a `new` expression collected from the AST, or written as TransientNewExpression::MARKER by
+     * a downgrade, is rendered as is, and an object instantiated by reflection is serialized,
+     * because its constructor arguments are no longer known.
      *
      * @param mixed $value
      */
     private static function export($value, int $depth): string
     {
+        $value = TransientNewExpression::fromMarker($value) ?? $value;
+
         if ($value instanceof TransientNewExpression) {
             $arguments = [];
             foreach ($value->arguments as $name => $argument) {

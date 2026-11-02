@@ -271,6 +271,14 @@ watchers][phpstorm-watchers]. You could also use [spatie/file-system-watcher][],
 PHP. If the plugin is too slow for your liking, try running the command with
 `COMPOSER_ATTRIBUTE_COLLECTOR_USE_CACHE=yes`, it will enable caching and speed up consecutive runs.
 
+**Can attribute arguments contain `new` expressions?**
+
+Yes, like `#[Conditional(new Service(), 'enabled')]`. Before PHP 8.1, attributes are collected from the
+AST without autoloading the classes, because loading such a class would be a fatal error. Code that is
+downgraded to run on PHP < 8.1 can replace `new Service(1, 2)` with
+`['olvlvl\ComposerAttributeCollector\NewExpression' => [Service::class, [1, 2]]]`, and the
+"attributes" file still creates the object with `new \Service(1, 2)`.
+
 
 
 ----------
